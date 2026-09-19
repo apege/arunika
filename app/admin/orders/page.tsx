@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { generateReviewToken } from '../../data/reviewToken';
 import { DbOrder, OrderStatus } from '../../../types/database';
+import StorageManagerBar from '../components/StorageManagerBar';
 
 function OrdersContent() {
   const searchParams = useSearchParams();
@@ -199,6 +200,9 @@ function OrdersContent() {
           <span>Refresh Data</span>
         </button>
       </div>
+
+      {/* Storage Management & Auto-Cleanup 90 Days Bar */}
+      <StorageManagerBar />
 
       {/* 2. Main Orders Table / Card Container */}
       <div className="rounded-[28px] sm:rounded-[32px] bg-white dark:bg-slate-900/90 border border-cyan-100 dark:border-cyan-900/40 p-6 sm:p-8 shadow-xs space-y-5">

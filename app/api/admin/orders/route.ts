@@ -12,9 +12,8 @@ export async function GET(request: Request) {
     const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 100;
     const withProof = searchParams.get('withProof') === 'true';
 
-    const selectColumns = withProof
-      ? 'id, order_code, product_id, user_id, roblox_username, customer_phone, robux, price, payment_method, payment_status, payment_proof_path, order_status, created_at, updated_at, roblox_user_id, customer_notes, admin_notes'
-      : 'id, order_code, product_id, user_id, roblox_username, customer_phone, robux, price, payment_method, payment_status, order_status, created_at, updated_at, roblox_user_id, customer_notes, admin_notes';
+    const selectColumns =
+      'id, order_code, product_id, user_id, roblox_username, customer_phone, robux, price, payment_method, payment_status, payment_proof_path, order_status, created_at, updated_at, roblox_user_id, customer_notes, admin_notes';
 
     let query = supabaseAdmin
       .from('orders')
@@ -40,7 +39,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data: orders || [] });
+    const mapped = (orders || []).map((o) => ({
+      ...o,
+      payment_proof_path: withProof
+        ? o.payment_proof_path
+        : o.payment_proof_path
+        ? 'exists'
+        : null,
+    }));
+
+    return NextResponse.json({ success: true, data: mapped });
   } catch (err: any) {
     console.error('Error in GET /api/admin/orders:', err);
     return NextResponse.json(

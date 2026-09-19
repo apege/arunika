@@ -22,9 +22,13 @@ export default function AdminTopnav({ onToggleMobileMenu }: AdminTopnavProps) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm('Apakah Anda yakin ingin keluar dari panel admin?')) {
+      try {
+        await fetch('/api/admin/auth/logout', { method: 'POST' });
+      } catch {}
       router.push('/admin/login');
+      router.refresh();
     }
   };
 

@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { OrderRow } from '../../../types/database';
+import StorageManagerBar from '../components/StorageManagerBar';
 
 interface PaymentItem {
   id: string;
@@ -187,6 +188,9 @@ export default function AdminPaymentsPage() {
           <span>Refresh Data</span>
         </button>
       </div>
+
+      {/* Storage Management & Auto-Cleanup 90 Days Bar */}
+      <StorageManagerBar />
 
       {/* 2. 3 Stat Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Inbox,
@@ -29,12 +29,21 @@ interface AdminSidebarProps {
 }
 
 export default function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebarProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentStatus = searchParams.get('status');
 
   const [countMasuk, setCountMasuk] = useState(0);
   const [countDiproses, setCountDiproses] = useState(0);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+    } catch {}
+    router.push('/admin/login');
+    router.refresh();
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -401,13 +410,14 @@ export default function AdminSidebar({ mobileOpen = false, onCloseMobile }: Admi
           <span>Lihat Toko</span>
           <ExternalLink className="w-3.5 h-3.5" />
         </Link>
-        <Link
-          href="/admin/login"
-          className="flex items-center gap-1.5 hover:text-rose-600 dark:hover:text-rose-400 transition-colors py-1"
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 hover:text-rose-600 dark:hover:text-rose-400 transition-colors py-1 cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span>Keluar</span>
-        </Link>
+        </button>
       </div>
     </div>
   );

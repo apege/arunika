@@ -19,6 +19,7 @@ import {
   Star,
   Package,
   PenLine,
+  AlertTriangle,
 } from 'lucide-react';
 import { generateReviewToken } from '../../../data/reviewToken';
 import { DbOrder, OrderStatus } from '../../../../types/database';
@@ -341,7 +342,25 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
           </div>
 
           {order.payment_proof_path ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {(() => {
+                const daysOld = Math.floor(
+                  (Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24)
+                );
+                if (daysOld >= 80) {
+                  const remaining = Math.max(0, 90 - daysOld);
+                  return (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span>
+                        Bukti transfer ini berumur <strong>{daysOld} hari</strong>. Sisa waktu{' '}
+                        <strong>{remaining} hari lagi</strong> sebelum dibersihkan otomatis oleh sistem retensi 90 hari.
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               <div
                 onClick={() => window.open(order.payment_proof_path!, '_blank')}
                 className="relative max-w-2xl mx-auto rounded-2xl overflow-hidden bg-slate-950/90 border border-slate-800/80 p-3 sm:p-4 flex items-center justify-center cursor-pointer hover:border-cyan-500/50 transition-all group"
