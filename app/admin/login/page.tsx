@@ -14,19 +14,31 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
-      if (username.trim() && password.trim()) {
+    try {
+      const res = await fetch('/api/admin/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
         router.push('/admin');
+        router.refresh();
       } else {
-        setError('Silakan masukkan username dan password yang valid.');
-        setLoading(false);
+        setError(json.error || 'Username atau password admin salah!');
       }
-    }, 400);
+    } catch (err: any) {
+      console.error('Login request error:', err);
+      setError('Terjadi kesalahan koneksi ke server.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
