@@ -86,10 +86,19 @@ export default function AdminSettingsPage() {
 
   const handleSaveAll = async () => {
     setIsSaving(true);
-    await saveGlobalSettings(settings);
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
+    try {
+      const success = await saveGlobalSettings(settings);
+      if (success) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        alert('Gagal menyimpan pengaturan ke database server.');
+      }
+    } catch (err: any) {
+      alert('Terjadi kesalahan saat menyimpan pengaturan: ' + (err?.message || 'Error'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePackageChange = (productId: string) => {
@@ -184,22 +193,35 @@ export default function AdminSettingsPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleToggleAll}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-cyan-200/80 dark:border-slate-800 hover:border-cyan-400 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-black shadow-xs transition-all hover:scale-102 active:scale-98 cursor-pointer shrink-0"
-        >
-          {areAllOpen ? (
-            <>
-              <Lock className="w-3.5 h-3.5 text-cyan-500" />
-              <span>Tutup Semua Section</span>
-            </>
-          ) : (
-            <>
-              <Unlock className="w-3.5 h-3.5 text-cyan-500" />
-              <span>Buka Semua Section</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          <button
+            type="button"
+            onClick={handleToggleAll}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-cyan-200/80 dark:border-slate-800 hover:border-cyan-400 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-black shadow-xs transition-all hover:scale-102 active:scale-98 cursor-pointer shrink-0"
+          >
+            {areAllOpen ? (
+              <>
+                <Lock className="w-3.5 h-3.5 text-cyan-500" />
+                <span>Tutup Semua</span>
+              </>
+            ) : (
+              <>
+                <Unlock className="w-3.5 h-3.5 text-cyan-500" />
+                <span>Buka Semua</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSaveAll}
+            disabled={isSaving}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-cyan-500/25 transition-all hover:scale-102 active:scale-98 cursor-pointer shrink-0 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            <span>{isSaving ? 'Menyimpan...' : 'Simpan Pengaturan'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Hidden File Inputs for uploads */}
@@ -293,6 +315,19 @@ export default function AdminSettingsPage() {
                   placeholder="6281234567890"
                   className="w-full px-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white font-medium focus:outline-hidden focus:border-cyan-400 transition-colors"
                 />
+              </div>
+
+              {/* Section 1 Quick Save Button */}
+              <div className="sm:col-span-2 flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveAll}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-black shadow-md shadow-cyan-500/20 transition-all hover:scale-102 active:scale-98 cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSaving ? 'Menyimpan...' : 'Simpan Identitas & Kontak'}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -508,6 +543,19 @@ export default function AdminSettingsPage() {
                   )}
                 </div>
               </div>
+
+              {/* Section 2 Quick Save Button */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveAll}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-black shadow-md shadow-cyan-500/20 transition-all hover:scale-102 active:scale-98 cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSaving ? 'Menyimpan...' : 'Simpan Pengaturan Promo'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -536,22 +584,22 @@ export default function AdminSettingsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-block text-xs font-bold text-slate-400 dark:text-slate-500">
-              QRIS Terpasang • Logo Terpasang
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 hidden sm:inline">
+              NMID: {settings.qris.nmid} • QRIS & Logo
             </span>
             {openQris ? (
-              <ChevronUp className="w-5 h-5 text-slate-400" />
+              <ChevronUp className="w-4 h-4 text-slate-400" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-slate-400" />
+              <ChevronDown className="w-4 h-4 text-slate-400" />
             )}
           </div>
         </button>
 
-        {/* Accordion Body */}
+        {/* Section 3 Body */}
         {openQris && (
-          <div className="p-5 sm:p-6 border-t border-slate-100 dark:border-slate-800/80">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Card 1: Status Barcode QRIS */}
+          <div className="p-6 sm:p-7 pt-2 border-t border-cyan-50 dark:border-cyan-900/30 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Box 1: Barcode QRIS Otomatis */}
               <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 space-y-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div>
@@ -563,58 +611,48 @@ export default function AdminSettingsPage() {
                     </p>
                   </div>
                   <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Terpasang
+                    <Check className="w-3 h-3" /> {settings.qris.qrisImage ? 'Custom QRIS Terpasang' : 'QRIS Default Terpasang'}
                   </span>
                 </div>
 
-                {/* QRIS Matrix / Preview Box */}
+                {/* QRIS Image Preview Box */}
                 <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-dashed border-cyan-200 dark:border-slate-800 flex flex-col items-center justify-center shadow-inner">
                   {settings.qris.qrisImage ? (
-                    <img
-                      src={settings.qris.qrisImage}
-                      alt="QRIS Barcode"
-                      className="w-36 h-36 object-contain"
-                    />
+                    <div className="w-44 h-44 relative rounded-xl overflow-hidden bg-white p-2 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                      <img
+                        src={settings.qris.qrisImage}
+                        alt="Custom Barcode QRIS"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
                   ) : (
-                    <div className="w-36 h-36 bg-slate-950 p-2 rounded-xl flex flex-col justify-between items-center text-white text-[9px] font-mono shadow-xs">
-                      <div className="w-full flex justify-between">
-                        <div className="w-7 h-7 bg-white rounded-xs p-1">
-                          <div className="w-full h-full bg-black" />
-                        </div>
-                        <div className="w-7 h-7 bg-white rounded-xs p-1">
-                          <div className="w-full h-full bg-black" />
-                        </div>
-                      </div>
-                      <span className="text-[8px] font-bold tracking-wider text-cyan-300">
-                        QRIS ARUNIKA
-                      </span>
-                      <div className="w-full flex justify-between items-end">
-                        <div className="w-7 h-7 bg-white rounded-xs p-1">
-                          <div className="w-full h-full bg-black" />
-                        </div>
-                        <div className="w-5 h-5 bg-gradient-to-tr from-cyan-400 to-blue-600 rounded-md flex items-center justify-center text-white text-[8px] font-black">
-                          A²
-                        </div>
-                      </div>
+                    <div className="w-44 h-44 relative rounded-xl overflow-hidden bg-white p-2 shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                      <Image
+                        src="/qris.png"
+                        alt="Default QRIS"
+                        width={160}
+                        height={160}
+                        className="object-contain"
+                      />
                     </div>
                   )}
                   <span className="text-[10px] text-slate-400 font-medium mt-2">
-                    Klik gambar untuk memperbesar QRIS
+                    {settings.qris.qrisImage ? 'Gambar barcode QRIS aktif' : 'Gambar barcode QRIS bawaan sistem'}
                   </span>
                 </div>
 
-                {/* Ganti Barcode QRIS Button */}
+                {/* Upload QRIS Button */}
                 <button
                   type="button"
                   onClick={() => qrisFileRef.current?.click()}
                   className="w-full py-2.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-cyan-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-cyan-600 border border-slate-200 dark:border-slate-700 text-xs font-black transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <Upload className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>Ganti Barcode QRIS</span>
+                  <span>Upload Foto Barcode QRIS Baru</span>
                 </button>
               </div>
 
-              {/* Card 2: Status Logo Storefront */}
+              {/* Box 2: Logo Storefront Toko */}
               <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 space-y-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div>
@@ -656,6 +694,19 @@ export default function AdminSettingsPage() {
                   <span>Ganti Logo Storefront</span>
                 </button>
               </div>
+            </div>
+
+            {/* Section 3 Quick Save Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={handleSaveAll}
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-black shadow-md shadow-cyan-500/20 transition-all hover:scale-102 active:scale-98 cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSaving ? 'Menyimpan...' : 'Simpan QRIS & Logo'}</span>
+              </button>
             </div>
           </div>
         )}

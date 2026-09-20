@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { supabaseAdmin } from '../../../lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
@@ -16,12 +14,12 @@ const DEFAULT_SETTINGS = {
     headline: '⚡ PROMO FLASH SALE ROBUX HARI INI!',
     description: 'Top Up Robux Instant, Cepat, Legal, Aman & Bergaransi 100% Uang Kembali!',
     countdownDate: '30 September 2026 • 23:59 WIB',
-    bannerImage: null,
+    bannerImage: null as string | null,
   },
   qris: {
     nmid: 'ID1029384756102',
     isInstalled: true,
-    qrisImage: null,
+    qrisImage: null as string | null,
   },
   logo: {
     logoPath: '/logo.png',
@@ -29,73 +27,73 @@ const DEFAULT_SETTINGS = {
   },
 };
 
-const settingsFilePath = path.join(process.cwd(), 'app', 'data', 'store_settings.json');
-
-function readLocalSettings() {
-  try {
-    if (fs.existsSync(settingsFilePath)) {
-      const raw = fs.readFileSync(settingsFilePath, 'utf-8');
-      return JSON.parse(raw);
-    }
-  } catch (err) {
-    console.error('Error reading local store settings:', err);
-  }
-  return DEFAULT_SETTINGS;
-}
-
-function writeLocalSettings(data: any) {
-  try {
-    const dir = path.dirname(settingsFilePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(settingsFilePath, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing local store settings:', err);
-  }
-}
-
 // GET /api/settings - Fetch global store settings
 export async function GET() {
   try {
-    // 1. Try to read from Supabase if table exists
-    try {
-      const { data: dbSettings, error: dbError } = await supabaseAdmin
-        .from('store_settings')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const { data: row, error: dbError } = await supabaseAdmin
+      .from('store_settings')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      if (!dbError && dbSettings && dbSettings.settings) {
-        return NextResponse.json(
-          { success: true, data: dbSettings.settings },
-          {
-            headers: {
-              'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
-            },
-          }
-        );
+    if (!dbError && row) {
+      let parsedFromAdminNote: any = {};
+      if (row.admin_note) {
+        try {
+          parsedFromAdminNote = JSON.parse(row.admin_note);
+        } catch {
+          // ignore parsing error
+        }
       }
-    } catch {
-      // Table doesn't exist, proceed to local JSON
+
+      const formattedSettings = {
+        storeName: row.store_name || parsedFromAdminNote.storeName || DEFAULT_SETTINGS.storeName,
+        whatsappCS: row.whatsapp_number || parsedFromAdminNote.whatsappCS || DEFAULT_SETTINGS.whatsappCS,
+        promo: {
+          isActive: row.promo_active !== undefined && row.promo_active !== null ? row.promo_active : (parsedFromAdminNote.promo?.isActive ?? DEFAULT_SETTINGS.promo.isActive),
+          packageId: row.promo_original_label || parsedFromAdminNote.promo?.packageId || DEFAULT_SETTINGS.promo.packageId,
+          packageLabel: row.promo_title || parsedFromAdminNote.promo?.packageLabel || DEFAULT_SETTINGS.promo.packageLabel,
+          packagePrice: row.promo_discount_price || parsedFromAdminNote.promo?.packagePrice || DEFAULT_SETTINGS.promo.packagePrice,
+          headline: row.promo_tag || parsedFromAdminNote.promo?.headline || DEFAULT_SETTINGS.promo.headline,
+          description: row.promo_subtitle || parsedFromAdminNote.promo?.description || DEFAULT_SETTINGS.promo.description,
+          countdownDate: parsedFromAdminNote.promo?.countdownDate || DEFAULT_SETTINGS.promo.countdownDate,
+          bannerImage: row.banner_image_path || parsedFromAdminNote.promo?.bannerImage || null,
+        },
+        qris: {
+          nmid: parsedFromAdminNote.qris?.nmid || DEFAULT_SETTINGS.qris.nmid,
+          isInstalled: parsedFromAdminNote.qris?.isInstalled ?? DEFAULT_SETTINGS.qris.isInstalled,
+          qrisImage: row.qris_image_path || parsedFromAdminNote.qris?.qrisImage || null,
+        },
+        logo: {
+          logoPath: row.logo_image_path || parsedFromAdminNote.logo?.logoPath || DEFAULT_SETTINGS.logo.logoPath,
+          isInstalled: parsedFromAdminNote.logo?.isInstalled ?? DEFAULT_SETTINGS.logo.isInstalled,
+        },
+      };
+
+      return NextResponse.json(
+        { success: true, data: formattedSettings },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        }
+      );
     }
 
-    // 2. Read from persistent local file
-    const settings = readLocalSettings();
     return NextResponse.json(
-      { success: true, data: settings },
+      { success: true, data: DEFAULT_SETTINGS },
       {
         headers: {
-          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         },
       }
     );
   } catch (err: any) {
     console.error('Error in GET /api/settings:', err);
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to fetch settings' },
-      { status: 500 }
+      { success: true, data: DEFAULT_SETTINGS },
+      { status: 200 }
     );
   }
 }
@@ -128,23 +126,53 @@ export async function POST(request: Request) {
       },
     };
 
-    // 1. Persist to local JSON file
-    writeLocalSettings(mergedSettings);
+    const dbPayload = {
+      store_name: mergedSettings.storeName,
+      whatsapp_number: mergedSettings.whatsappCS,
+      qris_image_path: mergedSettings.qris?.qrisImage || null,
+      logo_image_path: mergedSettings.logo?.logoPath || '/logo.png',
+      banner_image_path: mergedSettings.promo?.bannerImage || null,
+      promo_active: Boolean(mergedSettings.promo?.isActive),
+      promo_tag: mergedSettings.promo?.headline || '',
+      promo_title: mergedSettings.promo?.packageLabel || '',
+      promo_subtitle: mergedSettings.promo?.description || '',
+      promo_original_label: mergedSettings.promo?.packageId || '',
+      promo_discount_price: Number(mergedSettings.promo?.packagePrice) || 0,
+      admin_note: JSON.stringify(mergedSettings),
+      updated_at: new Date().toISOString(),
+    };
 
-    // 2. Also try to persist to Supabase if table exists
-    try {
-      await supabaseAdmin.from('store_settings').upsert({
-        id: 1,
-        settings: mergedSettings,
-        updated_at: new Date().toISOString(),
-      });
-    } catch {
-      // Ignore if table not yet created
+    // Check if row exists in store_settings
+    const { data: existingRows } = await supabaseAdmin
+      .from('store_settings')
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1);
+
+    if (existingRows && existingRows.length > 0) {
+      const { error: updateError } = await supabaseAdmin
+        .from('store_settings')
+        .update(dbPayload)
+        .eq('id', existingRows[0].id);
+
+      if (updateError) {
+        console.error('Supabase update store_settings error:', updateError);
+        return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
+      }
+    } else {
+      const { error: insertError } = await supabaseAdmin
+        .from('store_settings')
+        .insert(dbPayload);
+
+      if (insertError) {
+        console.error('Supabase insert store_settings error:', insertError);
+        return NextResponse.json({ success: false, error: insertError.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Pengaturan toko berhasil disimpan secara global',
+      message: 'Pengaturan toko berhasil disimpan secara permanen di database!',
       data: mergedSettings,
     });
   } catch (err: any) {
