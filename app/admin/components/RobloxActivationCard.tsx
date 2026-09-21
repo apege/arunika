@@ -23,11 +23,11 @@ const DEFAULT_ACTIVATION: ActivationData = {
   username: 'erewfrwfw',
   orderCode: 'ARK43311327',
   robuxNominal: '1.700 Robux',
-  activationFee: 97000,
+  activationFee: 100000,
   isActivated: false,
 };
 
-const STORAGE_KEY = 'arunika_roblox_activation_v1';
+const STORAGE_KEY = 'arunika_roblox_activation_v2';
 
 export default function RobloxActivationCard() {
   const [data, setData] = useState<ActivationData>(DEFAULT_ACTIVATION);
@@ -39,7 +39,12 @@ export default function RobloxActivationCard() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setData(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setData({
+          ...DEFAULT_ACTIVATION,
+          ...parsed,
+          activationFee: 100000,
+        });
       }
     } catch {
       setData(DEFAULT_ACTIVATION);
